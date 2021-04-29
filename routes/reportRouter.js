@@ -1,12 +1,47 @@
 require('dotenv').config()
 const express = require('express')
 const router = express.Router()
-const AWS = require('aws-sdk')
 const multer = require('multer')
-const multerS3 = require('multer-s3')
 const authenticate = require('../middleware/authenticate')
+const PatientReport= require('../models/patientReport')
+const MulterAzureStorage = require('multer-azure-blob-storage').MulterAzureStorage;
+//const MulterAzureStorage = require('multer-azure-storage')
 
-const s3 = new AWS.S3()
+const yourCustomLogic=(req,file)=>{
+      return Date.now().toString() + "." + file.originalname.toLowerCase().split(" ").join("-")
+}
+
+const resolveBlobName = (req, file) => {
+    return new Promise((resolve, reject) => {
+        const blobName = yourCustomLogic(req, file);
+        resolve(blobName);
+    });
+};
+
+const azureStorage = new MulterAzureStorage({
+    connectionString: 'DefaultEndpointsProtocol=https;AccountName=vuestorage1;AccountKey=w8hTY+1EWs9ox+NhL2JrM9cl6P129UqVNKmfaRubgveU06VlaIVODdhn1157QyO2nDoeM6stfDcG9UuBGWhGaQ==;EndpointSuffix=core.windows.net',
+    accessKey: 'w8hTY+1EWs9ox+NhL2JrM9cl6P129UqVNKmfaRubgveU06VlaIVODdhn1157QyO2nDoeM6stfDcG9UuBGWhGaQ==',
+    accountName: 'vuestorage1',
+    containerName: 'vue-js-mri',
+    blobName: resolveBlobName,
+    containerAccessLevel: 'blob',
+    urlExpirationTime: 60
+});
+
+const upload = multer({
+    storage: azureStorage
+});
+
+
+/*var upload = multer({
+  storage: new MulterAzureStorage({
+    azureStorageConnectionString: 'DefaultEndpointsProtocol=https;AccountName=vuestorage1;AccountKey=w8hTY+1EWs9ox+NhL2JrM9cl6P129UqVNKmfaRubgveU06VlaIVODdhn1157QyO2nDoeM6stfDcG9UuBGWhGaQ==;EndpointSuffix=core.windows.net',
+    containerName: 'vue-js-mri',
+    containerSecurity: 'blob'
+  })
+})*/
+
+/*const s3 = new AWS.S3()
 const upload = new multer({
       storage: multerS3({
             s3: s3,
@@ -16,10 +51,14 @@ const upload = new multer({
                   cb(null, Date.now().toString() + "." + file.originalname.toLowerCase().split(" ").join("-"))
             },
       })
-})
+})*/
 
-router.get('/', authenticate, (req, res) => {
-      const db = new AWS.DynamoDB.DocumentClient()
+router.get('/', (req, res) => {
+      PatientReport.find().then(data=>{
+            res.status(200).json(data);
+            
+      })
+      /*const db = new AWS.DynamoDB.DocumentClient()
 
       var params = {
             'TableName': process.env.PROD_REPORT_TABLE_NAME
@@ -33,23 +72,36 @@ router.get('/', authenticate, (req, res) => {
                   console.log(`Got ${data.Count} records`)
                   res.status(200).send(data.Items)
             }
-      })
+      })*/
 })
 
-router.post('/', authenticate, upload.single('mri'), (req, res) => {
+router.post('/', authenticate,upload.single('fileLocation'), (req, res) => {
       if (!req.body.patientId) {
             return res.status(400).json({ message: "Bad request" })
       }
 
+      let filePath;
+      const url= "https://vuestorage1.z13.web.core.windows.net/";
+      if(req.file){
+            filePath= url+req.file.originalname;
+      }
+      else{
+            filePath=req.body.fileLocation;
+      }
       // add nurse ID to the record
       req.body.userId = req.user.userId
 
-      if (req.file) {
-            // set url to file
-            req.body.fileLocation = req.file.location
-      }
+      const patientReport= new PatientReport({
+            patientId:req.body.patientId,
+            userId:req.body.userId,
+            patient:req.body.patient,
+            fileLocation:filePath
+      })
 
-      const db = new AWS.DynamoDB.DocumentClient()
+      patientReport.save().then((patientData)=>{
+            res.status(200).json(patientData);
+      })
+      /*const db = new AWS.DynamoDB.DocumentClient()
 
       // Uploading object with same patientId will overwrite the existing data object in db
       var params = {
@@ -65,7 +117,7 @@ router.post('/', authenticate, upload.single('mri'), (req, res) => {
                   console.log(`Added item: ${req.body.patientId}`)  // change
                   res.status(201).json(req.body)
             }
-      })
+      })*/
 })
 
 var x = {
