@@ -27,8 +27,7 @@ app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
 
-app.use('/', reportRouter)
-app.use('/start',(req,res,next)=>{
+app.use('/', (req,res,next)=>{
 	res.send("Successfull");
 })
 app.use('/report', reportRouter)
