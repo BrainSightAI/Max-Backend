@@ -1,6 +1,9 @@
 const express = require('express')
 const reportRouter = require('./routes/reportRouter')
 const registerRouter = require('./routes/registerRouter')
+const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const User= require('../models/user')
 const cors = require('cors')
 const bodyParser= require('body-parser');
 var mongoose = require('mongoose');
