@@ -25,10 +25,6 @@ app.use(cors())
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
-
-app.use('/', (req,res,next)=>{
-	res.send("Successfull");
-})
 app.use('/report', reportRouter)
 app.use('/login', (req, res) => {
 		res.send("Login Success");
@@ -95,6 +91,9 @@ app.use('/login', (req, res) => {
 })
 app.use('/register', registerRouter)
 
+app.use('/', (req,res,next)=>{
+	res.send("Successfull");
+})
 app.listen(process.env.PORT, () => {
 	console.log(`Started listening on ${process.env.PORT}`)
 })
