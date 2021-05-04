@@ -58,21 +58,6 @@ router.get('/', (req, res) => {
             res.status(200).json(data);
             
       })
-      /*const db = new AWS.DynamoDB.DocumentClient()
-
-      var params = {
-            'TableName': process.env.PROD_REPORT_TABLE_NAME
-      }
-
-      db.scan(params, (err, data) => {
-            if (err) {
-                  console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2))
-                  res.status(500).json(err)
-            } else {
-                  console.log(`Got ${data.Count} records`)
-                  res.status(200).send(data.Items)
-            }
-      })*/
 })
 
 router.post('/', authenticate,upload.single('fileLocation'), (req, res) => {
@@ -101,26 +86,50 @@ router.post('/', authenticate,upload.single('fileLocation'), (req, res) => {
       patientReport.save().then((patientData)=>{
             res.status(200).json(patientData);
       })
-      /*const db = new AWS.DynamoDB.DocumentClient()
-
-      // Uploading object with same patientId will overwrite the existing data object in db
-      var params = {
-            'TableName': process.env.PROD_REPORT_TABLE_NAME,
-            'Item': req.body
-      }
-
-      db.put(params, (err, data) => {
-            if (err) {
-                  console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2))
-                  res.status(500).json(err)
-            } else {
-                  console.log(`Added item: ${req.body.patientId}`)  // change
-                  res.status(201).json(req.body)
-            }
-      })*/
 })
 
-var x = {
+router.put("/",authenticate,upload.single('fileLocation'), (req, res) => {
+      if (!req.body.patientId) {
+            return res.status(400).json({ message: "Bad request" })
+      }
+
+      let filePath;
+      const url= "https://vuestorage1.z13.web.core.windows.net/";
+      if(req.file){
+            filePath= url+req.file.originalname;
+      }
+      else{
+            filePath=req.body.fileLocation;
+      }
+      // add nurse ID to the record
+      req.body.userId = req.user.userId
+
+      PatientReport.updateOne({patientId: req.body.patientId},{
+            $set:{
+                  patientId:req.body.patientId,
+                  userId:req.body.userId,
+                  patient:req.body.patient,
+                  fileLocation:filePath
+            }
+      }).then(result=>{
+            if(result.n>0){
+                  res.status(200).json({
+                  message:"Update Successful!"
+                  });
+            }
+            else{
+                  res.status(401).json({
+                  message:"User is not Authorized"
+                  });
+            }
+            }).catch((err)=>{
+                  res.status(500).json({
+                        message:err
+                  })
+            })
+})
+
+/*var x = {
       "subjectId": "ABC1234",  // patientId
       "dateOfVisit": "01/01/2020",
       "time": "213213123",
@@ -175,6 +184,6 @@ var x = {
             "bmi": "2.4 kg/m2",
             "otherPhysicalExamination": "NAD",
       }
-}
+}*/
 
 module.exports = router

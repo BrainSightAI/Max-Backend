@@ -1,0 +1,18 @@
+FROM node:alpine
+
+WORKDIR /usr/app
+
+ENV JWT_SECRET_KEY=0746efea2cfbce0e38d34705ce4c658721efc4d7ce631017e75f00964ece16bc
+ENV COSMOSDB_USER=max-db
+ENV COSMOSDB_PASSWORD=WBG2UlDO7fVRommg6KmNuEc8Oc16We8feSfGMwDwjUL18i4MmCAK0JMj7ErbKrX6bsARWTtbbFYuSJSMK9piSQ==
+ENV COSMOSDB_DBNAME=max-db
+ENV COSMOSDB_HOST=max-db.mongo.cosmos.azure.com
+ENV COSMOSDB_PORT=10255
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+CMD ["npm","start"]
