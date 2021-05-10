@@ -88,7 +88,7 @@ router.post('/', authenticate,upload.single('fileLocation'), (req, res) => {
       })
 })
 
-router.put("/",authenticate,upload.single('fileLocation'), (req, res) => {
+router.post("/updatePatient",authenticate,upload.single('fileLocation'), (req, res) => {
       if (!req.body.patientId) {
             return res.status(400).json({ message: "Bad request" })
       }
